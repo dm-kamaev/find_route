@@ -376,11 +376,9 @@ class Tree {
       }
 
       if (result === false) {
-        // console.log('----- false', validator, params, result);
         return result;
       }
     }
-    // console.log('-----', validator, params, result);
     return result;
   }
 }
