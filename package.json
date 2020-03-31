@@ -2,7 +2,7 @@
   "name": "find_url",
   "version": "0.0.1",
   "description": "",
-  "main": "my_router.js",
+  "main": "./src/my_router.js",
   "scripts": {
     "test": "jest"
   },
@@ -10,9 +10,11 @@
   "author": "dm-kamaev",
   "license": "ISC",
   "dependencies": {
-    "print-tree": "^0.1.5"
+    "print-tree": "0.1.5"
   },
   "devDependencies": {
-    "jest": "^25.2.4"
+    "axios": "0.19.2",
+    "get-port": "^5.1.1",
+    "jest": "25.2.4"
   }
 }

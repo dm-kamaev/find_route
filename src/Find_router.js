@@ -1,16 +1,14 @@
 'use strict';
 
-// TODO: add router.lookup
-// TODO: add router.get
-// TODO: add router.post
-// TODO: add router.put
-// TODO: add router.delete
-// TODO: validate dynamic params
 const printTree = require('print-tree');
 const qs = require('querystring');
-// const asc = require('/r_m/nodejs/my/asc.js');
+const url_core = require('url');
 
-module.exports = class Routing {
+const router_type = require('./router_type.js');
+const Context = require('./Context.js');
+
+
+module.exports = class Find_router {
   constructor(settings = {}) {
     this._methods = {
       get: new Tree('__GET__'),
@@ -22,12 +20,33 @@ module.exports = class Routing {
 
     this._acccumulated_middlewares = [];
 
-    this._cb_error = settings.handler_error || async function(){};
-    this._cb_not_found = settings.not_found || async function(){};
+    this._cb_error = settings.error || async function(ctx, req, res, error){ console.error(error); };
+    this._cb_not_found = settings.not_found || async function (ctx, req, res) {
+      res.writeHead(404);
+      res.write('NOT FOUND!\n');
+      res.end();
+    };
 
     this._init_methods();
   }
 
+
+  /**
+   * set_implement_context
+   * @param {object} cb - function for must be implement method get and set
+   */
+  set_implement_context(cb) {
+    this._create_context = cb;
+  }
+
+  /**
+   * on
+   * @param  {string}   method - GET || POST and etc
+   * @param  {{ validator: { params: object }}}   schema
+   * @param  {string}   url
+   * @param  {Array}    middlewares
+   * @param  {Function} cb - Promise<Function>
+   */
   on(method, schema = {}, url, middlewares = [], cb) {
     var tree = this._methods[method.toLowerCase()];
     if (!tree) {
@@ -37,31 +56,43 @@ module.exports = class Routing {
     tree.add(schema, url, middlewares, cb);
   }
 
+
   async lookup(req, res) {
     var method = req.method;
     var url = req.url;
+    var url_object = build_url_object(req);
+    url = url_object.pathname;
+
     var result = this.find(method, url);
-    var ctx = { req, res };
+    var ctx = this._create_context({ req, res });
     if (!result || !result.node || !result.node._cb) {
-      // throw new Error(`Not found route for url ${method} ${url}`);
       return await this._cb_not_found(ctx, req, res);
     }
+
     var { node, params, middlewares } = result;
-    ctx.params = params;
+    ctx.set('params', params);
+    ctx.set('url_object', url_object);
+    ctx.set('query', url_object.query);
+
     // TODO: Maybe use, express pattern via next ?
     for await (var mdw of middlewares) {
       try {
         var next = await mdw(ctx, req, res);
-        if (!next) {
-          return console.error('Call skip');
+        // if false, or Error then stop
+        if (next === false || next instanceof Error) {
+          var err = next === false ? new Error('Middleware was stopped') : next;
+          return await this._cb_error(ctx, req, res, err);
         }
       } catch (err) {
-        return this._cb_error(ctx, req, res, err);
+        return await this._cb_error(ctx, req, res, err);
       }
     }
-    // console.log(node);
-    // add support context
-    node._cb(ctx, req, res);
+
+    try {
+      await node._cb(ctx, req, res);
+    } catch (err) {
+      return await this._cb_error(ctx, req, res, err);
+    }
   }
 
 
@@ -75,6 +106,9 @@ module.exports = class Routing {
     });
   }
 
+  _create_context(data) {
+    return new Context(data);
+  }
 
   // console.log(parse_arg({ name: 'test' }, '/dsfsf', [async function () {}], async function cb() {}));
   // console.log(parse_arg({ name: 'test' }, '/dsfsf', async function cb() {}));
@@ -147,11 +181,11 @@ module.exports = class Routing {
 
   print_routers() {
     const iterate = function (node) {
-      if (!Object.keys(node._child).length) {
+      var keys = Object.keys(node._child);
+      if (!keys.length) {
         return [];
       } else {
         var res = [];
-        var keys = Object.keys(node._child);
         for (var i = 0, l = keys.length; i < l; i++) {
           var key = keys[i];
           var current = node._child[key];
@@ -173,7 +207,10 @@ module.exports = class Routing {
       );
     });
   }
-}
+};
+
+
+module.exports.type = router_type;
 
 
 class Tree {
@@ -199,17 +236,12 @@ class Tree {
 
     this._check_unique_template(url);
 
-    // this._check_unique_template(url);
-
     var parts = this._split_url(url);
     var current = this._head;
-
     while (parts.length) {
       var key = parts.shift();
-      // TODO: CHECK DUPLICATE
       var node = current.get_child(key);
       if (!node) {
-        // console.log('APPEND', current, key);
         current = current.add_child(new Node(key, {}));
       } else {
         current = node;
@@ -217,7 +249,8 @@ class Tree {
     }
     current.set_cb(cb);
     current.set_middlewares(middlewares);
-    current.set_schema(schema);
+    current.set_validator(schema);
+
     return current;
   }
 
@@ -273,11 +306,6 @@ class Tree {
 
         var out_key = node._name.replace(':', '');
         var value = parts[i];
-        var { after_validate, val } = this._validate_params(node.get_validator(), out_key, value);
-        if (after_validate === false) {
-          return null;
-        }
-        value = val;
         params[out_key] = value;
         // console.log('params= ', params);
       }
@@ -289,6 +317,12 @@ class Tree {
         current = temp;
       }
     }
+
+    var after_validate = this._validate_params(current.get_validator(), params);
+    if (after_validate === false) {
+      return null;
+    }
+
     return { node: current, params, middlewares: current.get_middlewares() };
   }
 
@@ -317,30 +351,36 @@ class Tree {
   }
 
 
-  /**
-   * _validate_params
-   * @param  {{ [params]: object }?} validator - optional params
-   * @param  {string} key
-   * @param  {string} value
-   * @return {{ after_validate: null | boolean, val: any }} if null then skip, else true/false
-   */
-  _validate_params(validator, key, value) {
-    var result = { after_validate: null, val: value };
-    if (!validator || !validator.params || !validator.params[key]) {
+
+  _validate_params(validator, params) {
+    var result = null;
+    if (!validator || !validator.params) {
       return result;
     }
-    var how_validate = validator.params[key];
-
-    if (typeof how_validate === 'string') {
-      result.after_validate = value === how_validate;
-    } else if (how_validate instanceof RegExp) {
-      result.after_validate = how_validate.test(value);
-      if (result.after_validate === true) {
-        if (how_validate instanceof Number_param) {
-          result.val = parseInt(value, 10);
+    var keys = Object.keys(params);
+    for (var i = 0, l = keys.length; i < l; i++) {
+      result = null;
+      var key = keys[i];
+      var how_validate = validator.params[key];
+      if (!how_validate) {
+        continue;
+      }
+      var value = params[key];
+      if (typeof how_validate === 'string') {
+        result = value === how_validate;
+      } else if (how_validate instanceof router_type.Validator) {
+        result = how_validate.validate(value);
+        if (result === true) {
+          params[key] = how_validate.parse(value);
         }
       }
+
+      if (result === false) {
+        // console.log('----- false', validator, params, result);
+        return result;
+      }
     }
+    // console.log('-----', validator, params, result);
     return result;
   }
 }
@@ -385,12 +425,12 @@ class Node {
     return this._middlewares;
   }
 
-  set_schema(schema) {
-    if (schema.name) {
-      this._url_name = schema.name;
-    }
-
-    if (schema.validator) {
+  /**
+   * set_validator
+   * @param {{ validator: object }} schema
+   */
+  set_validator(schema) {
+    if (schema && schema.validator) {
       this._validator = schema.validator;
     }
   }
@@ -416,9 +456,16 @@ class Node {
 }
 
 
-class Number_param extends RegExp {
-  constructor() {
-    super('^\\d+$');
-  }
+/**
+ * build_url_object
+ * @param  {request} req
+ * @return {object}
+ */
+function build_url_object(req) {
+  var url_obj = url_core.parse('http://'+req.headers.host+req.url, true);
+  url_obj.pathname = qs.unescape(url_obj.pathname);
+  url_obj.path = qs.unescape(url_obj.path);
+  url_obj.href = qs.unescape(url_obj.href);
+  url_obj.search = qs.unescape(url_obj.search);
+  return url_obj;
 }
-
