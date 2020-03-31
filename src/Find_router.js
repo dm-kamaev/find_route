@@ -439,13 +439,16 @@ class Node {
   }
 
 
-  // TODO: cache call
   get_dynamyc() {
+    if (this._dynamyc) {
+      return this._dynamyc;
+    }
+
     var keys = Object.keys(this._child);
     for (var i = 0, l = keys.length; i < l; i++) {
       var key = keys[i];
       if (key.startsWith(':')) {
-        return this._child[key];
+        return this._dynamyc = this._child[key];
       }
     }
     return false;
