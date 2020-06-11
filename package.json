@@ -1,8 +1,8 @@
 {
-  "name": "find_url",
+  "name": "find_router",
   "version": "0.0.1",
   "description": "",
-  "main": "./src/my_router.js",
+  "main": "./src/Find_router.js",
   "scripts": {
     "test": "jest"
   },
