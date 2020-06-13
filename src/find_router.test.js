@@ -18,9 +18,9 @@ let r = new Find_router({
     reply.status(404).send('NOT FOUND');
   },
 
-  // after_all: function (ctx, req, res) {
-  //   console.log('AFTER ALL', res.statusCode, res.getHeaders(), res.body);
-  // }
+  after_all: function (ctx, reply) {
+    console.log('AFTER ALL', reply.get_status_code(), reply.get_headers(), reply.get_body());
+  }
 });
 
 var middlewares = [

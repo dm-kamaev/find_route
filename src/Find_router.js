@@ -97,6 +97,7 @@ module.exports = class Find_router {
 
     try {
       await node._cb(ctx, reply);
+      await this._cb_after_all(ctx, reply);
     } catch (err) {
       await this._cb_error(ctx, reply, err);
       await this._cb_after_all(ctx, reply);

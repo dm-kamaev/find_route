@@ -25,6 +25,12 @@ module.exports = class Reply {
   }
 
 
+  get_status_code() {
+    return this._status_code;
+  }
+
+
+
   /**
    * set_header
    * @param {string} name - header name
@@ -34,6 +40,16 @@ module.exports = class Reply {
   set_header(name, val) {
     this._headers.set(name.trim(), val);
     return this;
+  }
+
+
+  get_headers() {
+    var res = {};
+    this._headers.foreach((val, name) => {
+      res[name] = val;
+    });
+
+    return res;
   }
 
 
@@ -55,9 +71,15 @@ module.exports = class Reply {
     head += '\r\n';
 
     res.socket.write(head);
-    res.socket.write(data);
+    res.socket.write(this._body = data);
     res.socket.end();
   }
+
+
+  get_body() {
+    return this._body;
+  }
+
 
 
   _build_headers() {
