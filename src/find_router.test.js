@@ -9,51 +9,56 @@ const Find_router = require('./Find_router.js');
 const num = Find_router.type.num;
 
 let r = new Find_router({
-  error: async function (ctx, req, res, error) {
+  error: async function (ctx, reply, error) {
     console.log('HANDLER_ERROR: ', error);
-    write_responce(ctx, 'INTERNAL ERROR', 500);
+    reply.status(500).send('INTERNAL ERROR');
   },
-  not_found: async function (ctx, req, res, error) {
-    console.log(`Not found route for url ${req.method} ${req.url}`);
-    write_responce(ctx, 'NOT FOUND', 404);
-  }
+  not_found: async function (ctx, reply) {
+    console.log(`Not found route for url ${ctx.get('req').method} ${ctx.get('req').url}`);
+    reply.status(404).send('NOT FOUND');
+  },
+
+  // after_all: function (ctx, req, res) {
+  //   console.log('AFTER ALL', res.statusCode, res.getHeaders(), res.body);
+  // }
 });
 
 var middlewares = [
-  async function (ctx, req, res) {
+  async function (ctx, reply) {
     console.log('CALL MIDDLEWARE');
     return true;
   }
 ];
 
-r.use(async function (ctx, req, res) {
+r.use(async function (ctx, reply) {
   console.log('CALL GLOBAL MIDDLEWARE');
   return true;
 });
 
-r.get('/adm/api/exp', middlewares, function (ctx) {
+r.get('/adm/api/exp', middlewares, function (ctx, reply) {
   console.log('GET /adm/api/exp', ctx.get('params'));
-  write_responce(ctx, ctx.get('req').method+' /adm/api/exp');
+  reply.send(ctx.get('req').method+' /adm/api/exp');
+  // write_responce(ctx, ctx.get('req').method+' /adm/api/exp');
 });
 
-r.get('/adm/api/exp/:poll_id', [], function (ctx) {
+r.get('/adm/api/exp/:poll_id', [], function (ctx, reply) {
   console.log('GET /adm/api/exp/:poll_id', ctx.get('params'));
-  write_responce(ctx, ctx.get('req').method+' /adm/api/exp/'+ctx.get('params').poll_id);
+  reply.send(ctx.get('req').method+' /adm/api/exp/'+ctx.get('params').poll_id);
 });
 
-r.post('/adm/api/exp', [], function (ctx) {
+r.post('/adm/api/exp', [], function (ctx, reply) {
   console.log('POST /adm/api/exp', ctx.get('params'));
-  write_responce(ctx, ctx.get('req').method+' /adm/api/exp');
+  reply.send(ctx.get('req').method+' /adm/api/exp');
 });
 
-r.put('/adm/api/exp/:poll_id', [], function (ctx) {
+r.put('/adm/api/exp/:poll_id', [], function (ctx, reply) {
   console.log('PUT /adm/api/exp/:poll_id', ctx.get('params'));
-  write_responce(ctx, ctx.get('req').method+' /adm/api/exp/'+ctx.get('params').poll_id);
+  reply.send(ctx.get('req').method+' /adm/api/exp/'+ctx.get('params').poll_id);
 });
 
-r.delete({ validator: { params: { poll_id: num } } }, '/adm/api/exp/:poll_id', [], function (ctx) {
+r.delete({ validator: { params: { poll_id: num } } }, '/adm/api/exp/:poll_id', [], function (ctx, reply) {
   console.log('DELETE /adm/api/exp/:poll_id', ctx.get('params'));
-  write_responce(ctx, ctx.get('req').method+' /adm/api/exp/'+ctx.get('params').poll_id);
+  reply.send(ctx.get('req').method+' /adm/api/exp/'+ctx.get('params').poll_id);
 });
 
 
@@ -64,37 +69,37 @@ r.post('/adm/api/exp/throw', async function () {
 
 function get_router_answer() {
   var r = new Find_router();
-  r.get('/', [], function (ctx) {
+  r.get('/', [], function (ctx, reply) {
     console.log(`${ctx.get('req').method} ${ctx.get('req').url}`, ctx.get('params'));
-    write_responce(ctx, ctx.get('req').method+' '+ctx.get('req').url);
+    reply.send(ctx.get('req').method+' '+ctx.get('req').url);
   });
 
-  r.get({ validator: { params: { poll_id: num, answer_id: num } } }, '/:answer_id', [], function (ctx) {
+  r.get({ validator: { params: { poll_id: num, answer_id: num } } }, '/:answer_id', [], function (ctx, reply) {
     console.log(`${ctx.get('req').method} ${ctx.get('req').url}`, ctx.get('params'));
-    write_responce(ctx, ctx.get('req').method+' /adm/api/exp/1/answer/'+ctx.get('params').answer_id);
+    reply.send(ctx.get('req').method+' /adm/api/exp/1/answer/'+ctx.get('params').answer_id);
   });
 
-  r.post('/', function (ctx) {
+  r.post('/', function (ctx, reply) {
     console.log(`${ctx.get('req').method} ${ctx.get('req').url}`, ctx.get('params'));
-    write_responce(ctx, ctx.get('req').method+' '+ctx.get('req').url);
+    reply.send(ctx.get('req').method+' '+ctx.get('req').url);
   });
 
-  r.put('/:answer_id', function (ctx) {
+  r.put('/:answer_id', function (ctx, reply) {
     console.log(`${ctx.get('req').method} ${ctx.get('req').url}`, ctx.get('params'));
-    write_responce(ctx, ctx.get('req').method+' /adm/api/exp/1/answer/'+ctx.get('params').answer_id);
+    reply.send(ctx.get('req').method+' /adm/api/exp/1/answer/'+ctx.get('params').answer_id);
   });
 
-  r.delete('/:answer_id', function (ctx) {
+  r.delete('/:answer_id', function (ctx, reply) {
     console.log(`${ctx.get('req').method} ${ctx.get('req').url}`, ctx.get('params'));
-    write_responce(ctx, ctx.get('req').method+' /adm/api/exp/1/answer/'+ctx.get('params').answer_id);
+    reply.send(ctx.get('req').method+' /adm/api/exp/1/answer/'+ctx.get('params').answer_id);
   });
 
   r.get({ validator: { params: { poll_id: num, answer_id: num } } }, '/:answer_id/file1/file2', [async function () {
     console.log('CALL BEFORE FILE');
     return true;
-  }], function (ctx) {
+  }], function (ctx, reply) {
     console.log(`${ctx.get('req').method} ${ctx.get('req').url}`, ctx.get('params'));
-    write_responce(ctx, ctx.get('req').method+' '+ctx.get('req').url);
+    reply.send(ctx.get('req').method+' '+ctx.get('req').url);
   });
   return r;
 }

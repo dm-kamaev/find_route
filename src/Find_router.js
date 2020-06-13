@@ -6,6 +6,7 @@ const url_core = require('url');
 
 const router_type = require('./router_type.js');
 const Context = require('./Context.js');
+const Reply = require('./Reply.js');
 
 
 module.exports = class Find_router {
@@ -20,12 +21,11 @@ module.exports = class Find_router {
 
     this._acccumulated_middlewares = [];
 
-    this._cb_error = settings.error || async function(ctx, req, res, error){ console.error(error); };
-    this._cb_not_found = settings.not_found || async function (ctx, req, res) {
-      res.writeHead(404);
-      res.write('NOT FOUND!\n');
-      res.end();
+    this._cb_error = settings.error || async function(ctx, reply, error) { console.error(error); };
+    this._cb_not_found = settings.not_found || async function (ctx, reply) {
+      reply.staus(404).send('NOT FOUND!\n');
     };
+    this._cb_after_all = settings.after_all || async function (_ctx, _reply) {};
 
     this._init_methods();
   }
@@ -64,9 +64,12 @@ module.exports = class Find_router {
     url = url_object.pathname;
 
     var result = this.find(method, url);
-    var ctx = this._create_context({ req, res });
+    var reply = new Reply(req, res);
+    var ctx = this._create_context({ req, res, reply });
     if (!result || !result.node || !result.node._cb) {
-      return await this._cb_not_found(ctx, req, res);
+      await this._cb_not_found(ctx, reply);
+      await this._cb_after_all(ctx, reply);
+      return;
     }
 
     var { node, params, middlewares } = result;
@@ -81,17 +84,23 @@ module.exports = class Find_router {
         // if false, or Error then stop
         if (next === false || next instanceof Error) {
           var err = next === false ? new Error('Middleware was stopped') : next;
-          return await this._cb_error(ctx, req, res, err);
+          await this._cb_error(ctx, reply, err);
+          await this._cb_after_all(ctx, reply);
+          return;
         }
       } catch (err) {
-        return await this._cb_error(ctx, req, res, err);
+        await this._cb_error(ctx, reply, err);
+        await this._cb_after_all(ctx, reply);
+        return;
       }
     }
 
     try {
-      await node._cb(ctx, req, res);
+      await node._cb(ctx, reply);
     } catch (err) {
-      return await this._cb_error(ctx, req, res, err);
+      await this._cb_error(ctx, reply, err);
+      await this._cb_after_all(ctx, reply);
+      return;
     }
   }
 
@@ -470,3 +479,5 @@ function build_url_object(req) {
   url_obj.search = qs.unescape(url_obj.search);
   return url_obj;
 }
+
+
