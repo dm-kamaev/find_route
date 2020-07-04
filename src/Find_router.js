@@ -223,12 +223,6 @@ module.exports = class Find_router {
 
 module.exports.type = router_type;
 
-const Middleware_stopped = module.exports.Middleware_stopped = class Middleware_stopped extends Error {
-  constructor(msg) {
-    super(msg);
-  }
-};
-
 
 class Tree {
   /**
