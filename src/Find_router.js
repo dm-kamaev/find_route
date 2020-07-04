@@ -83,8 +83,9 @@ module.exports = class Find_router {
         var next = await mdw(ctx, req, res);
         // if false, or Error then stop
         if (next === false || next instanceof Error) {
-          var err = next === false ? new Error('Middleware was stopped') : next;
-          await this._cb_error(ctx, reply, err);
+          // TODO: not yet required
+          // var err = next === false ? new Middleware_stopped('Middleware was stopped') : next;
+          // await this._cb_error(ctx, reply, err);
           await this._cb_after_all(ctx, reply);
           return;
         }
@@ -221,6 +222,12 @@ module.exports = class Find_router {
 
 
 module.exports.type = router_type;
+
+const Middleware_stopped = module.exports.Middleware_stopped = class Middleware_stopped extends Error {
+  constructor(msg) {
+    super(msg);
+  }
+};
 
 
 class Tree {
