@@ -23,7 +23,7 @@ module.exports = class Find_router {
 
     this._cb_error = settings.error || async function(ctx, reply, error) { console.error(error); };
     this._cb_not_found = settings.not_found || async function (ctx, reply) {
-      reply.staus(404).send('NOT FOUND!\n');
+      reply.status(404).send('NOT FOUND!\n');
     };
     this._cb_after_all = settings.after_all || async function (_ctx, _reply) {};
 
