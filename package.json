@@ -13,7 +13,7 @@
     "print-tree": "0.1.5"
   },
   "devDependencies": {
-    "axios": "0.19.2",
+    "axios": "0.21.1",
     "eslint-plugin-unicorn": "^21.0.0",
     "get-port": "^5.1.1",
     "jest": "25.2.4"
