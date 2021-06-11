@@ -1,6 +1,6 @@
 {
   "name": "find_router",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "simple router for node js",
   "main": "./src/Find_router.js",
   "scripts": {
@@ -13,9 +13,9 @@
     "print-tree": "0.1.5"
   },
   "devDependencies": {
-    "axios": "0.19.2",
-    "eslint-plugin-unicorn": "^21.0.0",
+    "axios": "^0.21.1",
+    "eslint-plugin-unicorn": "^33.0.1",
     "get-port": "^5.1.1",
-    "jest": "25.2.4"
+    "jest": "^27.0.4"
   }
 }
