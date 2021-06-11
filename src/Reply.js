@@ -1,6 +1,7 @@
 'use strict';
 
 const Collection = require('./Collection.js');
+const Cookie_manager = require('./Cookie_manager.js');
 
 module.exports = class Reply {
 
@@ -11,6 +12,23 @@ module.exports = class Reply {
     ]);
     this._req = req;
     this._res = res;
+
+    this._cookie_manager = new Cookie_manager(req);
+  }
+
+  /**
+   * set_cookie
+   * @param {string} name
+   * @param {string} value
+   * @param {{ name: string, value: string, days_to_live: number, domain?: string } | Array<{ name: string, value: string, days_to_live: number, domain: string }>} option
+   * { name: 'us_name', value: 'John', days_to_live: 4, domain: 'test.ru' }
+   * ||
+   * [{ name: 'us_name', value: 'John', days_to_live: 4, domain: 'test.ru' }]
+
+   */
+  set_cookie(name, value, option) {
+    this._cookie_manager.set(name, value, option);
+    return this;
   }
 
 
@@ -63,9 +81,12 @@ module.exports = class Reply {
       data = JSON.stringify(data);
     }
 
-    var res = this._res;
-    var head =
+    const res = this._res;
+    let head =
       'HTTP/1.1 '+this._status_code+' OK\r\n'+
+      this._cookie_manager.get_all_with_header()+
+      'X-XSS-Protection: 1; mode=block\r\n' +
+      'X-FRAME-OPTIONS: DENY\r\n'+
       this._build_headers()
     ;
     head += '\r\n';
