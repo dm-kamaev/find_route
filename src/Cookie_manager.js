@@ -145,8 +145,7 @@ cookies_api.create = function (req, params) {
   if (typeof days_to_live === 'number') {
     cookie += '; max-age=' + (days_to_live * 60 * 60 * 24);
   } else {
-    logger_server.warn('Cookies api: set => days_to_live is not digit "'+days_to_live+'"');
-    return '';
+    throw new Error('[find_router]: set => days_to_live is not digit "'+days_to_live+'"')
   }
 
   if (expires !== undefined && typeof expires === 'number') {
