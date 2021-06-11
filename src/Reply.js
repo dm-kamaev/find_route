@@ -26,8 +26,8 @@ module.exports = class Reply {
    * [{ name: 'us_name', value: 'John', days_to_live: 4, domain: 'test.ru' }]
 
    */
-  set_cookie(name, value, option) {
-    this._cookie_manager.set(name, value, option);
+  set_cookie(list) {
+    this._cookie_manager.set(list);
     return this;
   }
 
