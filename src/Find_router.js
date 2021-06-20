@@ -42,18 +42,17 @@ module.exports = class Find_router {
   /**
    * on
    * @param  {string}   method - GET || POST and etc
-   * @param  {{ validator: { params: object }}}   schema
    * @param  {string}   url
    * @param  {Array}    middlewares
    * @param  {Function} cb - Promise<Function>
    */
-  on(method, schema = {}, url, middlewares = [], cb) {
+  on(method, url, middlewares, cb) {
     var tree = this._methods[method.toLowerCase()];
     if (!tree) {
-      throw new Error('Not support method '+method);
+      throw new Error(`Not supported method "method"`);
     }
     middlewares = this._acccumulated_middlewares.concat(middlewares);
-    tree.add(schema, url, middlewares, cb);
+    tree.add(url, middlewares, cb);
   }
 
 
@@ -73,6 +72,9 @@ module.exports = class Find_router {
     }
 
     var { node, params, middlewares } = result;
+    // if (middlewares) {
+    //   console.log({ node, params, middlewares });
+    // }
     ctx.set('params', params);
     ctx.set('url_object', url_object);
     ctx.set('query', url_object.query);
@@ -111,7 +113,8 @@ module.exports = class Find_router {
     var me = this;
     Object.keys(me._methods).forEach(method => {
       me[method] = function (...arg) {
-        var params = me._parse_arg(method, arg);
+        // var params = me._parse_arg(method, arg);
+        var params = me._parse_arg2(method, arg);
         me.on.apply(me, params);
       };
     });
@@ -125,28 +128,39 @@ module.exports = class Find_router {
   // console.log(parse_arg({ name: 'test' }, '/dsfsf', async function cb() {}));
   // console.log(parse_arg('/dsfsf', async function cb() {}));
   // console.log(parse_arg('/dsfsf', [async function () {}], async function cb() {}));
-  _parse_arg(method, arg) {
-    var schema;
-    var url;
-    var middlewares;
-    var cb = arg.pop();
+  // _parse_arg(method, arg) {
+  //   var schema;
+  //   var url;
+  //   var middlewares;
+  //   var cb = arg.pop();
 
-    var first = arg.shift();
-    if (typeof first === 'string') {
-      url = first;
-      middlewares = arg.shift();
-    } else {
-      schema = first;
-      url = arg.shift();
-      middlewares = arg.shift();
-    }
+  //   var first = arg.shift();
+  //   if (typeof first === 'string') {
+  //     url = first;
+  //     middlewares = arg.shift();
+  //   } else {
+  //     schema = first;
+  //     url = arg.shift();
+  //     middlewares = arg.shift();
+  //   }
+  //   if (!url || !cb) {
+  //     throw new Error('Url and cb must be!');
+  //   }
+  //   // console.log();
+  //   // console.log();
+  //   // console.log([ method, schema || {}, url, middlewares || [], cb ]);
+  //   return [ method, schema || {}, url, middlewares || [], cb ];
+  // }
+
+  _parse_arg2(method, arg) {
+    var url = arg.shift();
+    var cb = arg.pop();
+    var middlewares = arg || [];
+
     if (!url || !cb) {
       throw new Error('Url and cb must be!');
     }
-    // console.log();
-    // console.log();
-    // console.log([ method, schema || {}, url, middlewares || [], cb ]);
-    return [ method, schema || {}, url, middlewares || [], cb ];
+    return [ method, url, middlewares, cb ];
   }
 
 
@@ -243,7 +257,7 @@ class Tree {
    * @param {function[]} middlewares
    * @param {Node} cb
    */
-  add(schema, url, middlewares, cb) {
+  add(url, middlewares, cb) {
 
     this._check_unique_template(url);
 
@@ -260,14 +274,13 @@ class Tree {
     }
     current.set_cb(cb);
     current.set_middlewares(middlewares);
-    current.set_validator(schema);
 
     return current;
   }
 
 
   append_childs(url, middlewares, childs) {
-    var node = this.add({}, url, [], null);
+    var node = this.add(url, [], null);
     Object.keys(childs).forEach(k => {
       var sub_node = childs[k];
       // console.log(this._head);global.process.exit();
@@ -329,10 +342,10 @@ class Tree {
       }
     }
 
-    var after_validate = this._validate_params(current.get_validator(), params);
-    if (after_validate === false) {
-      return null;
-    }
+    // var after_validate = this._validate_params(current.get_validator(), params);
+    // if (after_validate === false) {
+    //   return null;
+    // }
 
     return { node: current, params, middlewares: current.get_middlewares() };
   }
@@ -363,35 +376,35 @@ class Tree {
 
 
 
-  _validate_params(validator, params) {
-    var result = null;
-    if (!validator || !validator.params) {
-      return result;
-    }
-    var keys = Object.keys(params);
-    for (var i = 0, l = keys.length; i < l; i++) {
-      result = null;
-      var key = keys[i];
-      var how_validate = validator.params[key];
-      if (!how_validate) {
-        continue;
-      }
-      var value = params[key];
-      if (typeof how_validate === 'string') {
-        result = value === how_validate;
-      } else if (how_validate instanceof router_type.Validator) {
-        result = how_validate.validate(value);
-        if (result === true) {
-          params[key] = how_validate.parse(value);
-        }
-      }
+  // _validate_params(validator, params) {
+  //   var result = null;
+  //   if (!validator || !validator.params) {
+  //     return result;
+  //   }
+  //   var keys = Object.keys(params);
+  //   for (var i = 0, l = keys.length; i < l; i++) {
+  //     result = null;
+  //     var key = keys[i];
+  //     var how_validate = validator.params[key];
+  //     if (!how_validate) {
+  //       continue;
+  //     }
+  //     var value = params[key];
+  //     if (typeof how_validate === 'string') {
+  //       result = value === how_validate;
+  //     } else if (how_validate instanceof router_type.Validator) {
+  //       result = how_validate.validate(value);
+  //       if (result === true) {
+  //         params[key] = how_validate.parse(value);
+  //       }
+  //     }
 
-      if (result === false) {
-        return result;
-      }
-    }
-    return result;
-  }
+  //     if (result === false) {
+  //       return result;
+  //     }
+  //   }
+  //   return result;
+  // }
 }
 
 
@@ -438,16 +451,16 @@ class Node {
    * set_validator
    * @param {{ validator: object }} schema
    */
-  set_validator(schema) {
-    if (schema && schema.validator) {
-      this._validator = schema.validator;
-    }
-  }
+  // set_validator(schema) {
+  //   if (schema && schema.validator) {
+  //     this._validator = schema.validator;
+  //   }
+  // }
 
 
-  get_validator() {
-    return this._validator;
-  }
+  // get_validator() {
+  //   return this._validator;
+  // }
 
 
   get_dynamyc() {
