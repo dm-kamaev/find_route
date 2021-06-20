@@ -113,8 +113,7 @@ module.exports = class Find_router {
     var me = this;
     Object.keys(me._methods).forEach(method => {
       me[method] = function (...arg) {
-        // var params = me._parse_arg(method, arg);
-        var params = me._parse_arg2(method, arg);
+        var params = me._parse_arg(method, arg);
         me.on.apply(me, params);
       };
     });
@@ -128,31 +127,7 @@ module.exports = class Find_router {
   // console.log(parse_arg({ name: 'test' }, '/dsfsf', async function cb() {}));
   // console.log(parse_arg('/dsfsf', async function cb() {}));
   // console.log(parse_arg('/dsfsf', [async function () {}], async function cb() {}));
-  // _parse_arg(method, arg) {
-  //   var schema;
-  //   var url;
-  //   var middlewares;
-  //   var cb = arg.pop();
-
-  //   var first = arg.shift();
-  //   if (typeof first === 'string') {
-  //     url = first;
-  //     middlewares = arg.shift();
-  //   } else {
-  //     schema = first;
-  //     url = arg.shift();
-  //     middlewares = arg.shift();
-  //   }
-  //   if (!url || !cb) {
-  //     throw new Error('Url and cb must be!');
-  //   }
-  //   // console.log();
-  //   // console.log();
-  //   // console.log([ method, schema || {}, url, middlewares || [], cb ]);
-  //   return [ method, schema || {}, url, middlewares || [], cb ];
-  // }
-
-  _parse_arg2(method, arg) {
+  _parse_arg(method, arg) {
     var url = arg.shift();
     var cb = arg.pop();
     var middlewares = arg || [];
@@ -176,24 +151,25 @@ module.exports = class Find_router {
 
   // middleware
   // url, middlewares, router
-  use() {
-    var url, middlewares, router;
-    if (arguments.length === 1) {
+  use(...argv) {
+    if (argv.length === 1) {
       // Add middleware for every node
       var middleware = arguments[0];
       this._acccumulated_middlewares.push(middleware);
-    } else if (arguments.length === 3) {
-      ([ url, middlewares, router ] = arguments);
+    } else {
+      const url = argv.shift();
+      const router = argv.pop();
+      const middlewares = this._acccumulated_middlewares.concat(argv || []);
       var methods = router._methods;
       var list = [];
+
       Object.keys(methods).forEach(name => {
         var childs = methods[name]._head.get_all_child();
         if (Object.keys(childs).length) {
           list.push({ method: name, childs });
         }
       });
-      middlewares = this._acccumulated_middlewares.concat(middlewares);
-      // console.log(list);
+
       list.forEach(el => {
         var tree = this._methods[el.method];
         tree.append_childs(url, middlewares, el.childs);
