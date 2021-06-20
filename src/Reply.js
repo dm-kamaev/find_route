@@ -6,7 +6,7 @@ const Cookie_manager = require('./Cookie_manager.js');
 module.exports = class Reply {
 
   constructor(req, res) {
-    this._status_code = 200;
+    this.status(200);
     this._headers = new Collection([
       [ 'Content-type', 'text/html; charset=UTF-8' ]
     ]);
