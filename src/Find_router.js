@@ -82,7 +82,7 @@ module.exports = class Find_router {
     // TODO: Maybe use, express pattern via next ?
     for await (var mdw of middlewares) {
       try {
-        var next = await mdw(ctx, req, res);
+        var next = await mdw(ctx, req, res, reply);
         // if false, or Error then stop
         if (next === false || next instanceof Error) {
           // TODO: not yet required
