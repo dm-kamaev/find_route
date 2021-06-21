@@ -130,26 +130,30 @@ module.exports = class Cookie_manager {
 const cookies_api = {};
 
 // creat one cook
-// params {object} –– { name: 'us_name', value: 'John', days_to_live: 4, domain: 'test.ru', expires: new Date() }
+// params {object} –– { name: 'us_name', value: 'John', days_to_live: 4, domain: 'test.ru', expires: new Date(), session: boolean }
 // return {string} –– us_name=John; max-age=345600; path=/; domain=test.ru;
 cookies_api.create = function (req, params) {
-  var name = params.name;
-  var value = params.value;
-  var days_to_live = params.days_to_live;
-  var expires = params.expires;
-  var domain = params.domain;
+  const name = params.name;
+  const value = params.value;
+  const days_to_live = params.days_to_live;
+  const expires = params.expires;
+  let domain = params.domain;
+  const session = params.session;
   if (!domain) {
     domain = req.headers.host;
   }
   var cookie = name + '=' + qs.escape(value);
-  if (typeof days_to_live === 'number') {
-    cookie += '; max-age=' + (days_to_live * 60 * 60 * 24);
-  } else {
-    throw new Error('[find_router]: set => days_to_live is not digit "'+days_to_live+'"')
-  }
 
-  if (expires !== undefined && typeof expires === 'number') {
-    cookie += '; expires=' + expires;
+  if (!session) {
+    if (typeof days_to_live === 'number') {
+      cookie += '; max-age=' + (days_to_live * 60 * 60 * 24);
+    } else {
+      throw new Error('[find_router]: set => days_to_live is not digit "'+days_to_live+'"')
+    }
+
+    if (expires !== undefined && typeof expires === 'number') {
+      cookie += '; expires=' + expires;
+    }
   }
 
   cookie += '; path=/; domain='+domain+';';
