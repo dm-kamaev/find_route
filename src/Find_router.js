@@ -157,7 +157,7 @@ module.exports = class Find_router {
       var middleware = arguments[0];
       this._acccumulated_middlewares.push(middleware);
     } else {
-      const url = argv.shift();
+      let url = argv.shift();
       const router = argv.pop();
       const middlewares = this._acccumulated_middlewares.concat(argv || []);
       var methods = router._methods;
@@ -234,7 +234,6 @@ class Tree {
    * @param {Node} cb
    */
   add(url, middlewares, cb) {
-
     this._check_unique_template(url);
 
     var parts = this._split_url(url);
@@ -250,16 +249,25 @@ class Tree {
     }
     current.set_cb(cb);
     current.set_middlewares(middlewares);
-
+    // if (url === '/test') {
+    //   console.log(url, this._head);
+    // }
     return current;
   }
 
 
   append_childs(url, middlewares, childs) {
-    var node = this.add(url, [], null);
+    // let node = this.add(url, [], null);
+    let node;
+    // case: router.use('/', router.get('/answer')) => /answer
+    if (url === '/') {
+      node = this._head;
+    } else {
+      node = this.add(url, [], null);
+    }
+
     Object.keys(childs).forEach(k => {
       var sub_node = childs[k];
-      // console.log(this._head);global.process.exit();
       node.add_child(sub_node);
     });
 
@@ -288,13 +296,16 @@ class Tree {
    * @return {Node | null}
    */
   find(url) {
+    // const log = /\/adm\/api\/exp\/1\/answer/.test(url) ? console.log : () => {};
     var parts = this._split_url(url);
     var current = this._head;
     var params = {};
     // var middlewares = [];
     // TODO: concat middleware
+    // log({ parts });
     for (var i = 0, l = parts.length; i < l; i++) {
       var key = parts[i].replace(':', '');
+      // log(key);
       var node = current.get_child(key);
       // console.log(key, node);
       if (!node) {
@@ -311,6 +322,7 @@ class Tree {
       }
       current = node;
     }
+    // console.log('CUR', current);
     if (!current._cb) {
       var temp = current.get_child('/');
       if (temp && temp._cb) {
@@ -322,7 +334,6 @@ class Tree {
     // if (after_validate === false) {
     //   return null;
     // }
-
     return { node: current, params, middlewares: current.get_middlewares() };
   }
 
@@ -385,12 +396,26 @@ class Tree {
 
 
 class Node {
+
+  static transfuse(node_in, node_out) {
+    Object.keys(node_in).forEach(k => {
+      if (k.startsWith('_')) {
+        node_out[k] = node_in[k];
+      }
+    });
+    return node_out;
+  }
+
   constructor(name, option = { cb: null }) {
     this._name = name;
     this._cb = option.cb;
     this._middlewares = [];
 
     this._child = {};
+  }
+
+  get_name() {
+    return this._name;
   }
 
   get_all_child() {

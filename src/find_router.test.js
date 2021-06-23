@@ -6,8 +6,6 @@ const get_port = require('get-port');
 
 const Find_router = require('./Find_router.js');
 
-const num = Find_router.type.num;
-
 
 describe('Find router v1', function() {
   let r;
@@ -116,6 +114,8 @@ describe('Find router v1', function() {
 
       { method: 'GET', url: '/adm/api/exp/1/answer/1/file1/file2' }
     ];
+    // console.log(r._methods.get._head._child['adm']._child['api']._child['exp']._child[':poll_id']);
+    // throw new Error('STOP');
 
     for await (var el of list) {
       let { status, data } = await req[el.method.toLowerCase()](el.url);
@@ -339,6 +339,8 @@ describe('Find router v1', function() {
 
 describe('Find router v1', function() {
   let r;
+  let local_middleware;
+  let global_middleware;
   beforeAll(function () {
 
     r = new Find_router({
@@ -356,7 +358,10 @@ describe('Find router v1', function() {
       }
     });
 
-    var local_middleware = async function (ctx, reply) { return true; };
+    global_middleware = jest.fn(async function (ctx, reply) { return true; });
+    local_middleware = jest.fn(async function (ctx, reply) { return true; });
+
+    r.use(global_middleware);
 
 
     r.get('/adm/api/exp', local_middleware, function (ctx, reply) {
@@ -394,17 +399,177 @@ describe('Find router v1', function() {
       { method: 'DELETE', url: '/adm/api/exp/1', },
     ];
 
-    expect.assertions(15);
 
     for await (var el of list) {
       const { status, data } = await req[el.method.toLowerCase()](el.url);
     }
+    // expect.assertions(17);
+
+    expect(global_middleware).toHaveBeenCalledTimes(5);
+    expect(local_middleware).toHaveBeenCalledTimes(5);
 
     server.close();
   });
 });
 
 
+describe('Find router v1', function() {
+  let r;
+  let local_middleware;
+  beforeAll(function () {
+
+    r = new Find_router({
+      error: async function (ctx, reply, error) {
+        reply.status(500).send('INTERNAL ERROR');
+      },
+      not_found: async function (ctx, reply) {
+        reply.status(404).send('NOT FOUND');
+      },
+      after_all: function (ctx, reply) {
+        // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
+        expect(reply.get_status_code()).toBe(200);
+        expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
+        expect(reply.get_body()).toEqual(expect.any(String));
+      }
+    });
+
+    local_middleware = jest.fn(async function (ctx, reply) { return true; });
+
+    r.get('/', local_middleware, function (ctx, reply) {
+      reply.send('Variant 1');
+    });
+
+    const get_subroute = function() {
+      const r = new Find_router();
+
+      r.get('/', local_middleware, function (ctx, reply) {
+        reply.send('Variant 2');
+      });
+
+      r.get('/test', function(ctx, reply) {
+        reply.send(ctx.get('req').url);
+      });
+      return r;
+    };
+
+    r.use('/', get_subroute());
+
+  });
+
+  test('use with "/" with subroute', async function () {
+    let { server, host } = await create_server(r);
+
+    const req = axios.create({ baseURL: host  });
+
+    let list = [
+      { method: 'GET', url: '/', },
+      { method: 'GET', url: '/test', },
+    ];
+
+    {
+      const { status, data } = await req.get('/');
+      expect(status).toBe(200);
+      expect(data).toBe('Variant 2');
+    }
+
+    {
+      const { status, data } = await req.get('/test');
+      expect(status).toBe(200);
+      expect(data).toBe('/test');
+    }
+
+    expect(local_middleware).toHaveBeenCalledTimes(1);
+
+    server.close();
+  });
+});
+
+
+describe('Find router v1', function() {
+  let r;
+
+  test('duplicate router', async function () {
+    let r = new Find_router({
+      error: async function (ctx, reply, error) {
+        reply.status(500).send('INTERNAL ERROR');
+      },
+      not_found: async function (ctx, reply) {
+        reply.status(404).send('NOT FOUND');
+      },
+      after_all: function (ctx, reply) {
+        // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
+        expect(reply.get_status_code()).toBe(200);
+        expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
+        expect(reply.get_body()).toEqual(expect.any(String));
+      }
+    });
+
+
+
+    const local_middleware = async function (ctx, reply) { return true; };
+
+    function init() {
+      r.get('/answer', local_middleware, function (ctx, reply) {
+        reply.send('Variant 1');
+      });
+
+      r.post('/answer', local_middleware, function (ctx, reply) {
+        reply.send('Variant 1');
+      });
+
+      r.get('/answer', local_middleware, function (ctx, reply) {
+        reply.send('Variant 1');
+      });
+    };
+
+    expect(init).toThrow(Error);
+
+  });
+
+
+  test('duplicate router(subroute)', async function () {
+    let r = new Find_router({
+      error: async function (ctx, reply, error) {
+        reply.status(500).send('INTERNAL ERROR');
+      },
+      not_found: async function (ctx, reply) {
+        reply.status(404).send('NOT FOUND');
+      },
+      after_all: function (ctx, reply) {
+        // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
+        expect(reply.get_status_code()).toBe(200);
+        expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
+        expect(reply.get_body()).toEqual(expect.any(String));
+      }
+    });
+
+    const local_middleware = async function (ctx, reply) { return true; };
+
+    function init() {
+      r.get('/answer', local_middleware, function (ctx, reply) {
+        reply.send('Variant 1');
+      });
+
+      const get_subroute = function() {
+        const r = new Find_router();
+
+        r.get('/', local_middleware, function (ctx, reply) {
+          reply.send('Variant 2');
+        });
+
+        r.get('/test', function(ctx, reply) {
+          reply.send(ctx.get('req').url);
+        });
+        return r;
+      };
+
+      r.use('/answer', get_subroute());
+    }
+
+    expect(init).toThrow(Error);
+
+  });
+});
 
 
 async function create_server(router) {
