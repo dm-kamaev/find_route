@@ -485,91 +485,91 @@ describe('Find router v1', function() {
 });
 
 
-describe('Find router v1', function() {
-  let r;
+// describe('Find router v1', function() {
+//   let r;
 
-  test('duplicate router', async function () {
-    let r = new Find_router({
-      error: async function (ctx, reply, error) {
-        reply.status(500).send('INTERNAL ERROR');
-      },
-      not_found: async function (ctx, reply) {
-        reply.status(404).send('NOT FOUND');
-      },
-      after_all: function (ctx, reply) {
-        // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
-        expect(reply.get_status_code()).toBe(200);
-        expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
-        expect(reply.get_body()).toEqual(expect.any(String));
-      }
-    });
-
-
-
-    const local_middleware = async function (ctx, reply) { return true; };
-
-    function init() {
-      r.get('/answer', local_middleware, function (ctx, reply) {
-        reply.send('Variant 1');
-      });
-
-      r.post('/answer', local_middleware, function (ctx, reply) {
-        reply.send('Variant 1');
-      });
-
-      r.get('/answer', local_middleware, function (ctx, reply) {
-        reply.send('Variant 1');
-      });
-    };
-
-    expect(init).toThrow(Error);
-
-  });
+//   test('duplicate router', async function () {
+//     let r = new Find_router({
+//       error: async function (ctx, reply, error) {
+//         reply.status(500).send('INTERNAL ERROR');
+//       },
+//       not_found: async function (ctx, reply) {
+//         reply.status(404).send('NOT FOUND');
+//       },
+//       after_all: function (ctx, reply) {
+//         // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
+//         expect(reply.get_status_code()).toBe(200);
+//         expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
+//         expect(reply.get_body()).toEqual(expect.any(String));
+//       }
+//     });
 
 
-  test('duplicate router(subroute)', async function () {
-    let r = new Find_router({
-      error: async function (ctx, reply, error) {
-        reply.status(500).send('INTERNAL ERROR');
-      },
-      not_found: async function (ctx, reply) {
-        reply.status(404).send('NOT FOUND');
-      },
-      after_all: function (ctx, reply) {
-        // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
-        expect(reply.get_status_code()).toBe(200);
-        expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
-        expect(reply.get_body()).toEqual(expect.any(String));
-      }
-    });
 
-    const local_middleware = async function (ctx, reply) { return true; };
+//     const local_middleware = async function (ctx, reply) { return true; };
 
-    function init() {
-      r.get('/answer', local_middleware, function (ctx, reply) {
-        reply.send('Variant 1');
-      });
+//     function init() {
+//       r.get('/answer', local_middleware, function (ctx, reply) {
+//         reply.send('Variant 1');
+//       });
 
-      const get_subroute = function() {
-        const r = new Find_router();
+//       r.post('/answer', local_middleware, function (ctx, reply) {
+//         reply.send('Variant 1');
+//       });
 
-        r.get('/', local_middleware, function (ctx, reply) {
-          reply.send('Variant 2');
-        });
+//       r.get('/answer', local_middleware, function (ctx, reply) {
+//         reply.send('Variant 1');
+//       });
+//     };
 
-        r.get('/test', function(ctx, reply) {
-          reply.send(ctx.get('req').url);
-        });
-        return r;
-      };
+//     expect(init).toThrow(Error);
 
-      r.use('/answer', get_subroute());
-    }
+//   });
 
-    expect(init).toThrow(Error);
 
-  });
-});
+//   test('duplicate router(subroute)', async function () {
+//     let r = new Find_router({
+//       error: async function (ctx, reply, error) {
+//         reply.status(500).send('INTERNAL ERROR');
+//       },
+//       not_found: async function (ctx, reply) {
+//         reply.status(404).send('NOT FOUND');
+//       },
+//       after_all: function (ctx, reply) {
+//         // console.log('====', reply.get_status_code(), '====', ctx.get('req').url, ctx.get('req').method);
+//         expect(reply.get_status_code()).toBe(200);
+//         expect(reply.get_headers()['Content-type']).toBe('text/html; charset=UTF-8');
+//         expect(reply.get_body()).toEqual(expect.any(String));
+//       }
+//     });
+
+//     const local_middleware = async function (ctx, reply) { return true; };
+
+//     function init() {
+//       r.get('/answer', local_middleware, function (ctx, reply) {
+//         reply.send('Variant 1');
+//       });
+
+//       const get_subroute = function() {
+//         const r = new Find_router();
+
+//         r.get('/', local_middleware, function (ctx, reply) {
+//           reply.send('Variant 2');
+//         });
+
+//         r.get('/test', function(ctx, reply) {
+//           reply.send(ctx.get('req').url);
+//         });
+//         return r;
+//       };
+
+//       r.use('/answer', get_subroute());
+//     }
+
+//     expect(init).toThrow(Error);
+
+//   });
+// });
 
 
 async function create_server(router) {

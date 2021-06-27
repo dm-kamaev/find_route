@@ -234,7 +234,7 @@ class Tree {
    * @param {Node} cb
    */
   add(url, middlewares, cb) {
-    this._check_unique_template(url);
+    // this._check_unique_template(url);
 
     var parts = this._split_url(url);
     var current = this._head;
