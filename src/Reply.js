@@ -103,6 +103,7 @@ module.exports = class Reply {
    * @param  {Number} status -  301 - Permanently, 302 - Temporarily
    */
   redirect(url, status = 302) {
+    const res = this._res;
     const stop_browser_cache =
        'Expires: Mon, 26 Jul 1997 05:00:00 GMT\r\n' +
        'Cache-Control: no-cache, must-revalidate\r\n'+
