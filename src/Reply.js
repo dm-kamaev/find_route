@@ -97,6 +97,30 @@ module.exports = class Reply {
   }
 
 
+  /**
+   * redirect
+   * @param  {string} url
+   * @param  {Number} status -  301 - Permanently, 302 - Temporarily
+   */
+  redirect(url, status = 302) {
+    const stop_browser_cache =
+       'Expires: Mon, 26 Jul 1997 05:00:00 GMT\r\n' +
+       'Cache-Control: no-cache, must-revalidate\r\n'+
+       'Pragma: no-cache\r\n';
+
+    let head =
+      'HTTP/1.1 '+redirect_status+'\r\n' +
+      this._cookie_manager.get_all_with_header()+
+      stop_browser_cache +
+      'Location: '+new_location+'\r\n'+
+      '\r\n'
+    ;
+
+    res.socket.write(head);
+    res.socket.end();
+  }
+
+
   get_body() {
     return this._body;
   }
