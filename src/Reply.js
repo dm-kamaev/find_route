@@ -109,10 +109,10 @@ module.exports = class Reply {
        'Pragma: no-cache\r\n';
 
     let head =
-      'HTTP/1.1 '+redirect_status+'\r\n' +
+      'HTTP/1.1 '+status+'\r\n' +
       this._cookie_manager.get_all_with_header()+
       stop_browser_cache +
-      'Location: '+new_location+'\r\n'+
+      'Location: '+url+'\r\n'+
       '\r\n'
     ;
 
