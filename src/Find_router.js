@@ -82,7 +82,7 @@ module.exports = class Find_router {
     // TODO: Maybe use, express pattern via next ?
     for await (var mdw of middlewares) {
       try {
-        var next = await mdw(ctx, req, res, reply);
+        var next = await mdw(ctx, reply);
         // if false, or Error then stop
         if (next === false || next instanceof Error) {
           // TODO: not yet required
@@ -222,7 +222,7 @@ class Tree {
   constructor(name) {
     this._head = new Node(name || '__ROOT__');
 
-    this._unique_path = {};
+    // this._unique_path = {};
   }
 
 
@@ -351,15 +351,15 @@ class Tree {
   }
 
 
-  _check_unique_template(url){
-    var key_for_unique = url.replace(/\/:.+\//, '/__DYNAMIC__/');
+  // _check_unique_template(url){
+  //   var key_for_unique = url.replace(/\/:.+\//, '/__DYNAMIC__/');
 
-    if (this._unique_path[key_for_unique]) {
-      throw new Error(`Duplicate template url, previous template ${this._unique_path[key_for_unique]}`);
-    } else {
-      this._unique_path[key_for_unique] = url;
-    }
-  }
+  //   if (this._unique_path[key_for_unique]) {
+  //     throw new Error(`Duplicate template url, previous template ${this._unique_path[key_for_unique]}`);
+  //   } else {
+  //     this._unique_path[key_for_unique] = url;
+  //   }
+  // }
 
 
 

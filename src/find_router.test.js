@@ -153,15 +153,15 @@ describe('Find router v1', function() {
   let mock
 
   beforeAll(function () {
-    mock = jest.fn(async (ctx, req, res) => {
+    mock = jest.fn(async (ctx) => {
       expect(ctx).toHaveProperty('get');
       expect(ctx).toHaveProperty('set');
 
-      expect(req).toHaveProperty('method');
-      expect(req).toHaveProperty('url');
+      expect(ctx.get('req')).toHaveProperty('method');
+      expect(ctx.get('req')).toHaveProperty('url');
 
-      expect(res).toHaveProperty('socket');
-      expect(res).toHaveProperty('end');
+      expect(ctx.get('res')).toHaveProperty('socket');
+      expect(ctx.get('res')).toHaveProperty('end');
 
       return true;
     });
